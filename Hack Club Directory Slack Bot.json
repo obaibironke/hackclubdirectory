@@ -1,0 +1,558 @@
+{
+  "name": "Hack Club Directory Slack Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "value": "D0AH8CY4NNN",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -432
+      ],
+      "id": "a9da0f4f-d8e5-4bc5-a93b-0d62b8fb8eb8",
+      "name": "Slack Trigger",
+      "webhookId": "97e27b85-c596-48fb-aaf0-636be49e8b81",
+      "credentials": {
+        "slackApi": {
+          "id": "8FhXxJbw8T1jHYk3",
+          "name": "Slack account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ai.hackclub.com/proxy/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1936,
+        -240
+      ],
+      "id": "fcda3023-accb-4304-a315-edbe90fcb968",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cBrWCiqqVKWN54ZM",
+          "name": "HackClubBotAIAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const slack = $items(\"Slack Trigger\")[0].json;\nconst message = (slack.text || '').trim();\nconst channel = slack.channel;\nconst user_id = slack.user;\n\nconst airtableItems = $items(\"Combine Projects and Aspects\");\n\nconst programData = airtableItems\n  .filter(item => item.json.program)\n  .map(item => ({\n    program: item.json.program,\n    description: item.json.description || null,\n    aspects: (item.json.aspects || []).filter(a => a.aspect && a.contact)\n  }));\n\nif (!message) throw new Error('Missing Slack message');\nif (!programData.length) throw new Error('Airtable data is empty or mapped incorrectly');\n\nconst systemPrompt = `You are a Hack Club assistant. [HCDIR-RlrlRlrlRlrLrlRl]\nYou help users figure out who to contact for specific programs and issues.\n\nSource of truth:\n${JSON.stringify(programData, null, 2)}\n\nRules:\n- ONLY choose from the provided data\n- DO NOT mix aspects across programs\n- Only select an aspect if it belongs to the selected program\n- If the user is asking generally about a program (e.g. \"what is campfire\"), return the program and its description but set aspect and contact to \"general\"\n- If the user mentions an aspect that does not exist for that program, return unknown for aspect and contact\n- If an aspect belongs to a different program, include a note explaining the correct program\n- DO NOT make anything up\n- Return ONLY JSON\n- Format: {\"program\":\"...\",\"aspect\":\"...\",\"contact\":\"...\",\"description\":\"...\",\"note\":\"...\"}\n- If unsure: {\"program\":\"unknown\",\"aspect\":\"unknown\",\"contact\":\"unknown\",\"description\":null,\"note\":null}\n- If the user says exactly \"HCDIR-verify\", respond with only \"HCDIR-RlrlRlrlRlrLrlRl\"`;\n\nreturn [{\n  json: {\n    channel,\n    user_id,\n    body: {\n      model: 'google/gemini-2.5-flash',\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: message }\n      ],\n      temperature: 0,\n      max_tokens: 300\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        -240
+      ],
+      "id": "639c095a-f4ec-47c4-bc01-5aa5c7272abd",
+      "name": "Build Prompt"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apptaCrUywWNKAzCi",
+          "mode": "list",
+          "cachedResultName": "Hack Club Directory",
+          "cachedResultUrl": "https://airtable.com/apptaCrUywWNKAzCi"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl065NkxDgHyvbVa",
+          "mode": "list",
+          "cachedResultName": "Programs",
+          "cachedResultUrl": "https://airtable.com/apptaCrUywWNKAzCi/tbl065NkxDgHyvbVa"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1040,
+        -240
+      ],
+      "id": "730488fc-81f6-4f17-a3ec-ca0435b328ed",
+      "name": "Search Programs",
+      "executeOnce": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "Be7nN9LbKwPWqgov",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apptaCrUywWNKAzCi",
+          "mode": "list",
+          "cachedResultName": "Hack Club Directory",
+          "cachedResultUrl": "https://airtable.com/apptaCrUywWNKAzCi"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblPD6CorL15duBPU",
+          "mode": "list",
+          "cachedResultName": "Aspects",
+          "cachedResultUrl": "https://airtable.com/apptaCrUywWNKAzCi/tblPD6CorL15duBPU"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1264,
+        -240
+      ],
+      "id": "4aa91aff-86f1-4920-bb75-46df365c35de",
+      "name": "Search Aspects",
+      "executeOnce": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "Be7nN9LbKwPWqgov",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const programs = $items(\"Search Programs\");\nconst aspects = $items(\"Search Aspects\");\n\nreturn programs\n  .filter(p => p.json.Name)\n  .map(p => {\n    const aspectDetails = (p.json.Aspects || []).map(id =>\n      aspects.find(a => a.json.id === id)\n    ).filter(Boolean);\n\n    const seen = new Set();\n    const uniqueAspects = aspectDetails.filter(a => {\n      if (seen.has(a.json.ID)) return false;\n      seen.add(a.json.ID);\n      return true;\n    });\n\n    return {\n      json: {\n        program: p.json.Name,\n        description: p.json.Description || null,\n        aspects: uniqueAspects.map(a => ({\n          aspect: a.json.ID,\n          contact: a.json.contact\n        }))\n      }\n    };\n  });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        -240
+      ],
+      "id": "7660b444-6aa0-414a-98ee-71d0bd65244a",
+      "name": "Combine Projects and Aspects"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = ($json.choices?.[0]?.message?.content || '').trim()\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nconst channel = $('Build Prompt').first().json.channel;\nconst user_id = $('Build Prompt').first().json.user_id;\n\nif (!raw || raw === '') {\n  return [{ json: { channel, user_id, text: \"Hmm, I couldn't understand that input. It looks like it might not be a real question.\" } }];\n}\n\nif (raw === 'HCDIR-RlrlRlrlRlrLrlRl') {\n  return [{ json: { channel, user_id, text: 'HCDIR-RlrlRlrlRlrLrlRl' } }];\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  return [{ json: { channel, user_id, text: \"I couldn't parse that response. Are you testing me or trolling?\" } }];\n}\n\nconst program = parsed.program || 'unknown';\nconst aspect = parsed.aspect || 'unknown';\nconst contact = parsed.contact || 'unknown';\nconst description = parsed.description || null;\nconst note = parsed.note || null;\n\nconst aspectClean = aspect.replace(/-/g, ' ');\n\nlet text;\n\nif (program === 'unknown') {\n  text = `Sorry, I couldn't figure out which Hack Club program that relates to. Could you be more specific?`;\n}\n\nelse if (aspect === 'general') {\n  text = `*${program}*`;\n  if (description) text += `\\n${description}`;\n  if (note) text += `\\n${note}`;\n}\n\nelse if (aspect === 'unknown') {\n  text = note\n    ? `${note}`\n    : `I found the program ${program}, but couldn't match a specific aspect. Could you be more specific?`;\n}\n\nelse {\n  text = `For ${aspectClean} (${program}), contact ${contact}`;\n  if (note) text += `\\nNote: ${note}`;\n}\n\nreturn [{\n  json: {\n    channel,\n    user_id,\n    text\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        -240
+      ],
+      "id": "6bba5fe5-35ca-46c1-aac1-8885c03c5947",
+      "name": "Format Message"
+    },
+    {
+      "parameters": {
+        "jsCode": "//--------------------------------------------------\n// Guardrail Code Node\n// - Reads the user message from Validate Input or $json\n// - Detects profanity, sexual content, self harm\n// - Returns:\n//    blocked: true|false\n//    category: 'self-harm' | 'content' | null\n//    message: final text that should go back to the user (if blocked)\n//    sanitizedMessage: original or masked version for logs\n//--------------------------------------------------\n\nconst validate = $items(\"Slack Trigger\")[0].json;\nconst rawInput = (validate.text || '').toString();\n  (validate.message || $json.message || '').toString();\n\nconst msgLower = rawInput.toLowerCase();\n\n// Helper: whole word / phrase match\nconst containsAny = (text, list) => {\n  return list.some(pattern => {\n    if (pattern instanceof RegExp) {\n      return pattern.test(text);\n    }\n    const escaped = pattern.replace(/[.*+?^${}()|[\\]\\\\]/g, \"\\\\$&\");\n    const re = new RegExp(`\\\\b${escaped}\\\\b`, \"i\");\n    return re.test(text);\n  });\n};\n\n// Optional: mask words in sanitizedMessage for logs\nconst maskWords = (text, list) => {\n  let result = text;\n  for (const word of list) {\n    if (typeof word !== 'string' || !word.trim()) continue;\n    const escaped = word.replace(/[.*+?^${}()|[\\]\\\\]/g, \"\\\\$&\");\n    const re = new RegExp(`\\\\b${escaped}\\\\b`, \"gi\");\n    result = result.replace(re, match => \"*\".repeat(match.length));\n  }\n  return result;\n};\n\n// 1) Profanity (strong terms only)\nconst profanityList = [\n  \"fuck\",\n  \"fucking\",\n  \"motherfucker\",\n  \"motherfucking\",\n  \"shit\",\n  \"bullshit\",\n  \"dickhead\",\n  \"asshole\",\n  \"cocksucker\",\n  \"bitch\",\n  \"son of a bitch\",\n  \"cunt\",\n  \"dick\",\n  \"nigger\",\n  \"nigga\",\n  \"dick sucker\",\n  \"dicksucker\"\n];\n\n// 2) Sexual content (clearly explicit)\nconst sexualList = [\n  \"pornhub\",\n  \"porn hub\",\n  \"xvideos\",\n  \"onlyfans\",\n  \"only fans\",\n  \"deepthroat\",\n  \"deep throat\",\n  \"handjob\",\n  \"hand job\",\n  \"blow job\",\n  \"blowjob\",\n  \"cumshot\",\n  \"cum shot\",\n  \"gangbang\",\n  \"gang bang\",\n  \"bdsm\",\n  \"sex tape\",\n  \"cum\",\n  \"kink\",\n  \"kinky\",\n  \"fetish\",\n  \"fetishize\"\n];\n\n// 3) Self harm signals\nconst selfHarmList = [\n  \"kill myself\",\n  \"killing myself\",\n  \"end my life\",\n  \"suicidal\",\n  \"commit suicide\",\n  \"want to die\",\n  \"want to end it all\",\n  \"cut myself\",\n  \"self harm\",\n  \"self-harm\",\n  \"suicide\"\n];\n\nconst isProfanity = containsAny(msgLower, profanityList);\nconst isSexual   = containsAny(msgLower, sexualList);\nconst isSelfHarm = containsAny(msgLower, selfHarmList);\n\n// Build a sanitized copy for logging\nconst sanitized = maskWords(rawInput, [...profanityList, ...sexualList]);\n\n// Self harm: override everything\nif (isSelfHarm) {\n  return [{\n    json: {\n      blocked: true,\n      category: 'self-harm',\n      message:\n        \"I'm really sorry you're feeling this way. I'm not able to help in crises. If you are having any thoughts of suicide please call or text 988.\",\n      sanitizedMessage: sanitized\n    }\n  }];\n}\n\n// Explicit sexual or heavy profanity: block or deflect\nif (isSexual || isProfanity) {\n  return [{\n    json: {\n      blocked: true,\n      category: 'content',\n      message:\n        \"I can't continue with that kind of language or content. If you have a question about any Hack Club programs, I'm happy to help.\",\n      sanitizedMessage: sanitized\n    }\n  }];\n}\n\n// Otherwise: not blocked, pass through\nreturn [{\n  json: {\n    blocked: false,\n    // Keep both original and sanitized available for later if you want to use them\n    message: rawInput,\n    sanitizedMessage: sanitized\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -336
+      ],
+      "id": "d6a7816e-7b83-4bec-a061-1ddc430c74a6",
+      "name": "Check for innappropriate language"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "13862791-a2ef-410f-a148-41fd70259fd0",
+              "leftValue": "={{ $json.blocked }}",
+              "rightValue": "I'm really sorry you're feeling this way. I'm not able to help in crises. If you are having any thoughts of suicide please call or text 988.",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        -336
+      ],
+      "id": "306d463f-f866-4c32-aa54-ba31c0276d1b",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "={{ $json.user_id }}",
+          "mode": "id"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        2384,
+        -240
+      ],
+      "id": "2ba7cd34-cea1-4002-9853-f1647a907208",
+      "name": "Reply with answer",
+      "webhookId": "b68a4f15-537c-4c4d-b287-7ef3e045f044",
+      "credentials": {
+        "slackApi": {
+          "id": "8FhXxJbw8T1jHYk3",
+          "name": "Slack account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "={{ $('Slack Trigger').item.json.user }}",
+          "mode": "id"
+        },
+        "text": "={{ $json.message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1040,
+        -432
+      ],
+      "id": "e5f2e7e3-aa32-4989-b377-0662cf101b7a",
+      "name": "No bad words",
+      "webhookId": "b68a4f15-537c-4c4d-b287-7ef3e045f044",
+      "credentials": {
+        "slackApi": {
+          "id": "8FhXxJbw8T1jHYk3",
+          "name": "Slack account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "//--------------------------------------------------\n// Rate Limiter — per Slack user\n//--------------------------------------------------\nconst slack = $items(\"Slack Trigger\")[0].json;\nconst userId = slack.user || 'unknown';\nconst channelId = slack.channel || 'unknown';\n\nconst windowMs = 3000; // 3 seconds per user\nconst now = Date.now();\nconst store = $getWorkflowStaticData('global');\nconst key = `rl_${userId}_${channelId}`;\nconst last = store[key] || 0;\nconst diff = now - last;\n\n// If repeat inside the window → BLOCK\nif (diff < windowMs) {\n  return [{\n    json: {\n      blocked: true,\n      category: 'rate-limit',\n      message: 'Too many requests — please wait a few seconds before sending another message.',\n      channel: channelId,\n      user_id: userId,\n      waitRemainingMs: windowMs - diff\n    }\n  }];\n}\n\n// Otherwise → update and continue\nstore[key] = now;\nreturn $input.all().map(item => ({\n  json: {\n    ...item.json,\n    blocked: false\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        -432
+      ],
+      "id": "b135b0b5-8155-42e0-a3a3-c0163d6870dd",
+      "name": "Rate Limiter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7457ca75-8bd7-4e20-93a8-bb12bf0f4275",
+              "leftValue": "={{ $json.blocked }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        368,
+        -432
+      ],
+      "id": "9f91a87a-3b42-448d-94f8-c8a1318efe43",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "={{ $('Slack Trigger').item.json.user }}",
+          "mode": "id"
+        },
+        "text": "I am receiving too much traffic right now, please try again later.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        592,
+        -528
+      ],
+      "id": "ebb0034d-5db7-4a71-877c-9040d654fca8",
+      "name": "Too many people",
+      "webhookId": "b68a4f15-537c-4c4d-b287-7ef3e045f044",
+      "credentials": {
+        "slackApi": {
+          "id": "8FhXxJbw8T1jHYk3",
+          "name": "Slack account 7"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Slack Trigger": [
+      {
+        "json": {
+          "type": "message",
+          "user": "U0AGSV2NWS3",
+          "ts": "1772769746.388039",
+          "bot_id": "B0AHC1DNAF6",
+          "app_id": "A0AGSUTSX63",
+          "text": "I found the program Campfire but couldn't match a specific aspect. Could you be more specific?\nFulfillment is an aspect of Blueprint, not Campfire.",
+          "team": "T0A7RC2937X",
+          "bot_profile": {
+            "id": "B0AHC1DNAF6",
+            "deleted": false,
+            "name": "Hack Club Directory",
+            "updated": 1772163045,
+            "app_id": "A0AGSUTSX63",
+            "user_id": "U0AGSV2NWS3",
+            "icons": {
+              "image_36": "https://a.slack-edge.com/80588/img/plugins/app/bot_36.png",
+              "image_48": "https://a.slack-edge.com/80588/img/plugins/app/bot_48.png",
+              "image_72": "https://a.slack-edge.com/80588/img/plugins/app/service_72.png"
+            },
+            "team_id": "T0A7RC2937X"
+          },
+          "blocks": [
+            {
+              "type": "rich_text",
+              "block_id": "hyH",
+              "elements": [
+                {
+                  "type": "rich_text_section",
+                  "elements": [
+                    {
+                      "type": "text",
+                      "text": "I found the program Campfire but couldn't match a specific aspect. Could you be more specific?\nFulfillment is an aspect of Blueprint, not Campfire."
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "channel": "D0AH8CY4NNN",
+          "event_ts": "1772769746.388039",
+          "channel_type": "im"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Slack Trigger": {
+      "main": [
+        [
+          {
+            "node": "Rate Limiter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Programs": {
+      "main": [
+        [
+          {
+            "node": "Search Aspects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Aspects": {
+      "main": [
+        [
+          {
+            "node": "Combine Projects and Aspects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Projects and Aspects": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [
+          {
+            "node": "Reply with answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for innappropriate language": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "No bad words",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Programs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limiter": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Too many people",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check for innappropriate language",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f8ceeb19-43b2-42e2-ab61-bdd7cc075124",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "06edcad76c1849fbb023c98670eb0ea73c3796e60a9282ecf29fcc679ea1e64d"
+  },
+  "id": "Jp59B9reIYfQtgUv",
+  "tags": []
+}
