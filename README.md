@@ -52,6 +52,7 @@ Licensing:
 Business Source License 1.1
 
 Licensor: Oba Ibironke
+
 Licensed Work: Hack Club Directory Bot
 
 Use Limitation: You may not use, copy, modify, merge, publish,
