@@ -1,0 +1,211 @@
+{
+  "name": "Directory Fillout Sorting Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fillout-aspects",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -48
+      ],
+      "id": "995d0bbf-d296-40db-b08c-cb2b2a7feca7",
+      "name": "Fillout Webhook",
+      "webhookId": "fillout-aspects"
+    },
+    {
+      "parameters": {
+        "jsCode": "const questions = $json.body.submission.questions;\n\n// Helper to get question value by name\nconst get = (name) => {\n  const q = questions.find(q => q.name === name);\n  return q ? q.value : null;\n};\n\n// Get program record ID from the RecordPicker\nconst programRecord = get('What program should these aspects link too?');\nconst programId = programRecord?.[0]?.recordID;\n\nif (!programId) throw new Error('No program linked');\n\n// Collect aspects, IDs and contacts, filter empty ones\nconst aspects = [];\nfor (let i = 1; i <= 10; i++) {\n  const aspect = get(`Aspect ${i}`);\n  const id = get(`ID ${i}`);\n  const contact = get(`Contact ${i}`);\n\n  if (aspect && aspect.trim() !== '') {\n    aspects.push({\n      aspect: aspect.trim(),\n      id: id ? id.trim() : '',\n      contact: contact ? contact.trim() : '',\n      programId: [programId]  // wrapped in array for Airtable linked record field\n    });\n  }\n}\n\nif (!aspects.length) throw new Error('No aspects provided');\n\nreturn aspects.map(a => ({ json: a }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -48
+      ],
+      "id": "f5d3c9b1-ad23-474c-8343-261cb0881f06",
+      "name": "Process Form Data"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "apptaCrUywWNKAzCi",
+          "mode": "list",
+          "cachedResultName": "Hack Club Directory",
+          "cachedResultUrl": "https://airtable.com/apptaCrUywWNKAzCi"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblPD6CorL15duBPU",
+          "mode": "list",
+          "cachedResultName": "Aspects",
+          "cachedResultUrl": "https://airtable.com/apptaCrUywWNKAzCi/tblPD6CorL15duBPU"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.id }}",
+            "contact": "={{ $json.contact }}",
+            "Aspect": "={{ $json.aspect }}",
+            "Program": "={{ $json.programId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Program",
+              "displayName": "Program",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Name (from Program)",
+              "displayName": "Name (from Program)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Aspect",
+              "displayName": "Aspect",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "contact",
+              "displayName": "contact",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Channel",
+              "displayName": "Channel",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aliases",
+              "displayName": "Aliases",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        320,
+        -48
+      ],
+      "id": "9c2aeb25-4fb9-49d9-9b4e-e78e377f1424",
+      "name": "Create Aspect",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "Be7nN9LbKwPWqgov",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Fillout Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Form Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Form Data": {
+      "main": [
+        [
+          {
+            "node": "Create Aspect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Aspect": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3b537cfd-6256-49ea-9994-534d68aededc",
+  "meta": {
+    "instanceId": "06edcad76c1849fbb023c98670eb0ea73c3796e60a9282ecf29fcc679ea1e64d"
+  },
+  "id": "2QbzNz0CcuSDCikZ",
+  "tags": []
+}
