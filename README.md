@@ -47,3 +47,21 @@ Final notes:
 
 This is still a work in progress and I am very open to suggestions if you have any please reach out to me (@Oba) on Slack. 
 
+Licensing:
+
+Business Source License 1.1
+
+Licensor: Oba Ibironke
+Licensed Work: Hack Club Directory Bot
+
+Use Limitation: You may not use, copy, modify, merge, publish,
+distribute, sublicense, or sell copies of the Licensed Work,
+or use it as part of any product or service, without explicit
+written permission from the Licensor.
+
+To request permission, contact: @Oba on Slack
+
+The source code is made available for viewing and educational
+purposes only. All other rights are reserved.
+
+Copyright (c) 2026 Oba Ibironke. All Rights Reserved.
