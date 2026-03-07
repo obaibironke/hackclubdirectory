@@ -41,7 +41,7 @@ Nodes:
 
 AI and Prompt Rules:
 
-This workflow uses Gemini 2.5 Flash through the Hack Club AI API. The prompt for the AI is generated solely based on information from the databaase and it never makes up contacts. It never uses outside sources so the information is accurate.
+This workflow uses Gemini 2.5 Flash through the Hack Club AI API. The prompt for the AI is generated solely based on information from the database and it never makes up contacts. It never uses outside sources so the information is accurate.
 
 Final notes:
 
