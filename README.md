@@ -6,7 +6,7 @@ This is a directory that I created specifically for use in Hack Club. It has a d
 
 Set Up and Use:
 
-As far as I know this can only be run using N8N which i used to build this. You need to make sure to have the slack bot credentials, (with correct scopes added) Airtable database wuth programs, aspects, and contacts, Airtable credentials, and AI API credentials.
+This workflow was designed and built for use through n8n. You need to make sure to have the slack bot credentials, (with correct scopes added) Airtable database wuth programs, aspects, and contacts, Airtable credentials, and AI API credentials.
 
 Nodes:
 
